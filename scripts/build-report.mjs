@@ -387,13 +387,13 @@ function renderShot(side, delta, crop) {
   return {
     clipped,
     html: `<figure class="shot">
+  <figcaption class="shot-label">${label}</figcaption>
   <a class="frame" href="${href}" target="_blank" rel="noopener" title="Open the full viewport capture">
     <div class="crop" style="aspect-ratio:${crop.w}/${crop.h}">
       <img src="${href}" alt="${esc(alt)}" width="${dimensions.width}" height="${dimensions.height}" style="width:${imageWidth.toFixed(3)}%;left:${imageLeft.toFixed(3)}%;top:${imageTop.toFixed(3)}%">
       ${html}
     </div>
   </a>
-  <figcaption>${label} — <code>${esc(pair.route)}</code> · ${esc(pair.state)} · <a href="${href}" target="_blank" rel="noopener">full capture</a></figcaption>
 </figure>`,
   };
 }
@@ -421,6 +421,7 @@ function renderDelta(delta) {
   <p class="why">${esc(delta.why).replace(/\n/g, "<br>")}</p>
   <p class="source"><code>${esc(delta.source)}</code></p>
   <div class="pair">${before.html}${after.html}</div>
+  <p class="pair-meta"><code>${esc(delta.pair.route)}</code> · ${esc(delta.pair.state)}</p>
   ${note}
 </article>`;
 }
@@ -490,11 +491,11 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;bac
 .source{margin:10px 0 0;font-size:12px;color:var(--muted)}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:26px 0 0;align-items:start}
 .shot{margin:0}
+.shot-label{margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.pair-meta{margin:14px 0 0;font-size:12px;color:var(--muted)}
 .frame{position:relative;display:block;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden}
 .crop{position:relative;overflow:hidden;background:var(--card)}
 .crop img{position:absolute;display:block;max-width:none;height:auto;border-radius:0}
-figcaption{margin-top:8px;font-size:12px;color:var(--muted)}
-figcaption a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
 .callout{
   position:absolute;border:2px solid var(--signal);
   background:rgba(249,115,22,.08);border-radius:4px;
@@ -539,7 +540,7 @@ const html = `<!doctype html>
     <p class="refs"><code>${esc(baseLabel + data.base.ref)}</code> → <code>${esc(headLabel + data.head.ref)}</code></p>
     <p class="meta">${esc(data.fixture)} · ${viewWidth}×${viewHeight} · ${esc(data.theme)} · ${esc(date)}</p>
     <p class="summary">${esc(data.summary)}</p>
-    <p class="legend">Screenshots are cropped around the changed component; the orange box marks it. Click a screenshot or “full capture” to open the full ${viewWidth}×${viewHeight} viewport.</p>
+    <p class="legend">Screenshots are cropped around the changed component; the orange box marks it. Click a screenshot to open the full ${viewWidth}×${viewHeight} viewport.</p>
   </header>
 
   <section class="deltas">

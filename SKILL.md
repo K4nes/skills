@@ -20,7 +20,7 @@ A delta is one observable difference: a label, state, layout, control, motion or
 ## Report anatomy
 
 1. **Masthead:** title, base→head refs, fixture, viewport, theme, date, the one-sentence summary, and the legend.
-2. **One numbered card per delta:** a plain `1.` prefix, section title ("Pricing — annual price"), why, source `file:line`, and a before/after pair cropped to the same window around the changed component, with orange boxes on both images.
+2. **One numbered card per delta:** a plain `1.` prefix, section title ("Pricing — annual price"), why, source `file:line`, and a before/after pair with BEFORE/AFTER labels above the images, cropped to the same window around the changed component, with orange boxes on both images.
 3. **Evidence sections:** Unchanged, Not UI, Not observed, Verification. Keep all four even when empty; the builder writes "None recorded." for an empty list.
 
 Visual contract:
@@ -28,9 +28,9 @@ Visual contract:
 - Page background `#FAFAF8` (not pure white), cards `#FDFCFA`, centered column `min(1120px, 100% - 40px)`, **text left-aligned inside the column**, light theme only.
 - Callout: `#F97316` 2px outline plus 8% fill. No number badge on the screenshots; the card number is plain orange text in the heading (`1.`). Orange is reserved for the change boxes.
 - Boxes are padded 6 CSS px beyond the measured rect for breathing room; boxes on the same side that overlap after padding are merged into one box. A box covering ≥60% of the crop drops the fill; ≥95% is rejected — mark the changed component, not the viewport.
-- The builder crops both images of a card to the same window: the union of that delta's rects, 35% padding clamped to 64–200px, minimum 320×180 CSS px, clamped to the viewport. The full viewport stays one click away under "full capture".
+- The builder crops both images of a card to the same window: the union of that delta's rects, 35% padding clamped to 64–200px, minimum 320×180 CSS px, clamped to the viewport. Each screenshot links to its full viewport capture.
 - A removed element gets no dashed anchor and no absent label. Give both sides the same container rect (the nav, card or page area), never the whole viewport or a band wider than the component; the box marks that component and the difference sits inside it. Explain the removal in `why`.
-- Images and the "full capture" link open the original PNG. At 760px and below the before/after pair stacks.
+- Each shot has a small BEFORE/AFTER label above it; the pair shares one route/state line below. Do not repeat route, state or a capture link under both images. At 760px and below the pair stacks.
 
 ## Steps
 
