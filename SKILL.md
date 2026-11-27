@@ -26,11 +26,11 @@ A delta is one observable difference: a label, state, layout, control, motion or
 Visual contract:
 
 - Page background `#FAFAF8` (not pure white), cards `#FDFCFA`, centered column `min(1120px, 100% - 40px)`, **text left-aligned inside the column**, light theme only.
-- Callout: `#F97316` 2px outline plus 8% fill. No number badge on the screenshots; the card number is plain orange text in the heading (`1.`). Orange is reserved for the change boxes.
-- Boxes are padded 6 CSS px beyond the measured rect for breathing room; boxes on the same side that overlap after padding are merged into one box. A box covering ≥60% of the crop drops the fill; ≥95% is rejected — mark the changed component, not the viewport.
+- Callout: `#F97316` 2px outline, no fill. No number badge on the screenshots; the card number is plain orange text in the heading (`1.`). Orange is reserved for the change boxes.
+- Boxes are padded 6 CSS px beyond the measured rect for breathing room; boxes on the same side that overlap after padding are merged into one box. A box covering ≥95% of its crop is rejected — mark the changed component, not the viewport.
 - The builder crops both images of a card to the same window: the union of that delta's rects, 35% padding clamped to 64–200px, minimum 320×180 CSS px, clamped to the viewport. Each screenshot links to its full viewport capture.
 - A removed element gets no dashed anchor and no absent label. Give both sides the same container rect (the nav, card or page area), never the whole viewport or a band wider than the component; the box marks that component and the difference sits inside it. Explain the removal in `why`.
-- Each shot has a small BEFORE/AFTER label above it; the pair shares one route/state line below. Do not repeat route, state or a capture link under both images. At 760px and below the pair stacks.
+- Each shot has a small BEFORE/AFTER label above it; the pair shares one route line below, with the state appended only when it is not `idle` (e.g. `/billing · hover`). Do not repeat route, state or a capture link under both images. At 760px and below the pair stacks.
 
 ## Steps
 
@@ -107,7 +107,9 @@ Visual contract:
 | `unchanged`, `notUI`, `notObserved` | String arrays; an empty list renders "None recorded." |
 | `verification` | `{ "command": "...", "result": "..." }`. |
 
-Rects are CSS pixels, never device pixels. The builder rejects screenshots whose aspect ratio differs from the viewport by more than 1%, because full-page or cropped captures cannot be mapped back to the measured rects. Without a `crop`, the builder derives one per delta from the union of its rects; a manual `crop` must contain all of them.
+Rects are CSS pixels, never device pixels. The builder rejects screenshots whose aspect ratio differs from the viewport by more than 1%, because full-page or cropped captures cannot be mapped back to the measured rects. Without a `crop`, the builder derives one per delta from the union of its rects; a manual `crop` must leave 6px around every rect.
+
+A pair's `state` is required evidence of matched capture conditions, but the report hides `idle`; it prints only a non-default state such as `hover`, `focus`, `error` or `loading`.
 
 For a removed element, use the same container rect on both sides (e.g., the whole nav), not the whole viewport or a full-width page band; explain the removal in `why`. The old `absent`/dashed marker is rejected.
 

@@ -361,8 +361,7 @@ function renderCallouts(regions, crop, number, side) {
         area < cropArea * 0.95,
         `delta ${number} ${side}: box covers ≥95% of the crop; mark the changed component, not the viewport`,
       );
-      const bare = area >= cropArea * 0.6;
-      const className = bare ? "callout callout--bare" : "callout";
+      const className = "callout";
       const style =
         `left:${percent(box.left - crop.x, crop.w)};top:${percent(box.top - crop.y, crop.h)};` +
         `width:${percent(box.right - box.left, crop.w)};height:${percent(box.bottom - box.top, crop.h)}`;
@@ -380,7 +379,8 @@ function renderShot(side, delta, crop) {
   const { html, clipped } = renderCallouts(regions, crop, delta.n, side);
   const label = side === "before" ? "Before" : "After";
   const href = esc(hrefFor(absPath));
-  const alt = `${label}: ${delta.title} at ${pair.route}, state ${pair.state} (cropped to the changed component)`;
+  const stateAlt = pair.state === "idle" ? "" : `, ${pair.state} state`;
+  const alt = `${label}: ${delta.title} at ${pair.route}${stateAlt} (cropped to the changed component)`;
   const imageWidth = (viewWidth / crop.w) * 100;
   const imageLeft = -(crop.x / crop.w) * 100;
   const imageTop = -(crop.y / crop.h) * 100;
@@ -413,6 +413,7 @@ function renderDelta(delta) {
   const crop = cropFor(delta);
   const before = renderShot("before", delta, crop);
   const after = renderShot("after", delta, crop);
+  const stateMeta = delta.pair.state === "idle" ? "" : ` · ${esc(delta.pair.state)}`;
   const note = before.clipped || after.clipped
     ? `<p class="note">A box is clipped at the viewport edge; the changed element extends beyond the capture.</p>`
     : "";
@@ -421,7 +422,7 @@ function renderDelta(delta) {
   <p class="why">${esc(delta.why).replace(/\n/g, "<br>")}</p>
   <p class="source"><code>${esc(delta.source)}</code></p>
   <div class="pair">${before.html}${after.html}</div>
-  <p class="pair-meta"><code>${esc(delta.pair.route)}</code> · ${esc(delta.pair.state)}</p>
+  <p class="pair-meta"><code>${esc(delta.pair.route)}</code>${stateMeta}</p>
   ${note}
 </article>`;
 }
@@ -498,10 +499,9 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;bac
 .crop img{position:absolute;display:block;max-width:none;height:auto;border-radius:0}
 .callout{
   position:absolute;border:2px solid var(--signal);
-  background:rgba(249,115,22,.08);border-radius:4px;
+  border-radius:4px;
   pointer-events:none;
 }
-.callout--bare{background:transparent}
 .note{margin:12px 0 0;font-size:12px;color:var(--muted)}
 .missing{max-width:70ch;margin:14px 0 0;color:var(--muted)}
 .evidence{margin-top:40px;display:grid;gap:20px;text-align:left}
