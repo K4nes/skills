@@ -8,13 +8,13 @@ Personal agent skills.
 | --- | --- |
 | [ui-previews](ui-previews/SKILL.md) | Explains UI changes with before/after screenshots and an annotated HTML report. |
 
-## Install with npx
+## Install
 
 ```sh
 npx skills@latest add K4nes/skills
 ```
 
-The CLI finds `ui-previews`, then asks which agent and scope to install to. Requires Node 22.20+.
+The CLI finds `ui-previews`, then asks which agent and scope to install to.
 
 Non-interactive project install:
 
@@ -22,22 +22,14 @@ Non-interactive project install:
 npx skills@latest add K4nes/skills --skill ui-previews -a universal -y
 ```
 
-The CLI installs to each agent's skill directory and writes `skills-lock.json` in the project. To keep using an agent that reads `~/.agents/skills` (e.g. OMP), use the manual symlink below.
+Add `-g` for a global install. If your agent reads `~/.agents/skills` globally, use an agent target that writes there, e.g. `-a codex -g`. The CLI writes `skills-lock.json` in the project for updates.
 
-## Install manually (any agent)
+## Requirements
 
-Clone the repository where you keep your skills, then symlink each skill into `~/.agents/skills`:
-
-```sh
-git clone https://github.com/K4nes/skills.git ~/skills
-ln -s ~/skills/ui-previews ~/.agents/skills/ui-previews
-```
-
-The repository is the source of truth; the symlink keeps `~/.agents/skills/<name>` pointing at it.
+- `npx skills` installer: Node 22.20+.
+- `ui-previews` builder: Node 18+.
 
 ## ui-previews
-
-Requires Node 18+.
 
 ```sh
 node ~/.agents/skills/ui-previews/scripts/build-report.mjs <evidence-dir>/deltas.json

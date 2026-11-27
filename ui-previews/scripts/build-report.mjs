@@ -9,6 +9,12 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
 
+const nodeMajor = Number(process.versions.node.split(".")[0]);
+if (nodeMajor < 18) {
+  console.error("build-report: Node 18+ is required to build the report.");
+  process.exit(1);
+}
+
 const USAGE = `Usage: build-report.mjs <deltas.json> [--out report.html] [--allow-aspect-mismatch]
 
 Reads deltas.json, validates the pair screenshots and rects, and writes a static
