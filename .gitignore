@@ -12,6 +12,10 @@ node_modules/
 # ui-previews evidence
 .ui-previews/
 
+# skills CLI project installs
+.agents/
+skills-lock.json
+
 # Logs
 *.log
 
