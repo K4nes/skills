@@ -5,6 +5,7 @@
  *
  *   node build-report.mjs <deltas.json> [--out report.html] [--allow-aspect-mismatch]
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
 
@@ -104,6 +105,10 @@ function pngSize(absPath) {
   return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
 }
 
+function fileHash(absPath) {
+  return createHash("sha256").update(readFileSync(absPath)).digest("hex");
+}
+
 function checkAspect(dimensions, label) {
   const aspect = dimensions.width / dimensions.height;
   if (Math.abs(aspect - viewAspect) / viewAspect <= 0.01) return;
@@ -140,6 +145,10 @@ for (const pair of data.pairs) {
   const afterDims = pngSize(afterAbs);
   checkAspect(beforeDims, `pair ${pair.id} before`);
   checkAspect(afterDims, `pair ${pair.id} after`);
+  need(
+    fileHash(beforeAbs) !== fileHash(afterAbs),
+    `pair ${pair.id}: before and after are byte-identical; capture the state that shows the change or mark the delta notObserved`,
+  );
   pairs.set(pair.id, {
     id: pair.id,
     route: pair.route,
@@ -166,12 +175,12 @@ function readRegions(list, label) {
   });
 }
 
-function rectBox(rect, crop) {
+function rectBox(rect, crop, label) {
   const left = clamp(rect.x - CALLOUT_PAD, crop.x, crop.x + crop.w);
   const top = clamp(rect.y - CALLOUT_PAD, crop.y, crop.y + crop.h);
   const right = clamp(rect.x + rect.w + CALLOUT_PAD, crop.x, crop.x + crop.w);
   const bottom = clamp(rect.y + rect.h + CALLOUT_PAD, crop.y, crop.y + crop.h);
-  need(right > left && bottom > top, "callout rect has no visible area inside the crop");
+  need(right > left && bottom > top, `${label} has no visible area inside the crop`);
   const clipped =
     rect.x < 0 || rect.y < 0 || rect.x + rect.w > viewWidth || rect.y + rect.h > viewHeight;
   return { left, top, right, bottom, clipped };
@@ -219,13 +228,13 @@ function cropFor(delta) {
         delta.crop.y + delta.crop.h <= viewHeight,
       `delta ${delta.n}: crop must fit inside the ${viewWidth}x${viewHeight} viewport`,
     );
-    for (const rect of [...delta.before, ...delta.after]) {
+    for (const [index, rect] of [...delta.before, ...delta.after].entries()) {
       need(
-        rect.x >= delta.crop.x &&
-          rect.y >= delta.crop.y &&
-          rect.x + rect.w <= delta.crop.x + delta.crop.w &&
-          rect.y + rect.h <= delta.crop.y + delta.crop.h,
-        `delta ${delta.n}: crop must contain every rect`,
+        rect.x - CALLOUT_PAD >= delta.crop.x &&
+          rect.y - CALLOUT_PAD >= delta.crop.y &&
+          rect.x + rect.w + CALLOUT_PAD <= delta.crop.x + delta.crop.w &&
+          rect.y + rect.h + CALLOUT_PAD <= delta.crop.y + delta.crop.h,
+        `delta ${delta.n}: crop must leave at least ${CALLOUT_PAD}px around rect ${index}`,
       );
     }
     return {
@@ -241,14 +250,14 @@ function cropFor(delta) {
   const minY = Math.min(...rects.map((rect) => rect.y));
   const maxX = Math.max(...rects.map((rect) => rect.x + rect.w));
   const maxY = Math.max(...rects.map((rect) => rect.y + rect.h));
-  const pad = clamp(0.35 * Math.max(maxX - minX, maxY - minY), 100, 240);
+  const pad = clamp(0.35 * Math.max(maxX - minX, maxY - minY), 64, 200);
   let x = minX - pad;
   let y = minY - pad;
   let width = maxX - minX + pad * 2;
   let height = maxY - minY + pad * 2;
 
-  const minWidth = 360;
-  const minHeight = 240;
+  const minWidth = 320;
+  const minHeight = 180;
   if (width < minWidth) {
     x -= (minWidth - width) / 2;
     width = minWidth;
@@ -296,7 +305,7 @@ for (const delta of data.deltas) {
   need(before.length || after.length, `delta ${delta.n}: needs at least one rect on before or after`);
   need(
     delta.absent == null,
-    `delta ${delta.n}: absent is no longer supported; box the same full-context rect on both sides instead`,
+    `delta ${delta.n}: absent is no longer supported; box the same component rect on both sides instead`,
   );
 
   let crop = null;
@@ -335,11 +344,11 @@ const unchanged = readList(data.unchanged, "unchanged");
 const notUI = readList(data.notUI, "notUI");
 const notObserved = readList(data.notObserved, "notObserved");
 
-function renderCallouts(regions, crop) {
+function renderCallouts(regions, crop, number, side) {
   let clipped = false;
   const boxes = mergeBoxes(
-    regions.map((rect) => {
-      const box = rectBox(rect, crop);
+    regions.map((rect, index) => {
+      const box = rectBox(rect, crop, `delta ${number} ${side}[${index}]`);
       clipped = clipped || box.clipped;
       return box;
     }),
@@ -348,17 +357,15 @@ function renderCallouts(regions, crop) {
     .map((box) => {
       const area = (box.right - box.left) * (box.bottom - box.top);
       const cropArea = crop.w * crop.h;
-      const frame = area >= cropArea * 0.95;
+      need(
+        area < cropArea * 0.95,
+        `delta ${number} ${side}: box covers ≥95% of the crop; mark the changed component, not the viewport`,
+      );
       const bare = area >= cropArea * 0.6;
-      const className = frame
-        ? "callout callout--frame"
-        : bare
-          ? "callout callout--bare"
-          : "callout";
-      const style = frame
-        ? "left:6px;top:6px;right:6px;bottom:6px"
-        : `left:${percent(box.left - crop.x, crop.w)};top:${percent(box.top - crop.y, crop.h)};` +
-          `width:${percent(box.right - box.left, crop.w)};height:${percent(box.bottom - box.top, crop.h)}`;
+      const className = bare ? "callout callout--bare" : "callout";
+      const style =
+        `left:${percent(box.left - crop.x, crop.w)};top:${percent(box.top - crop.y, crop.h)};` +
+        `width:${percent(box.right - box.left, crop.w)};height:${percent(box.bottom - box.top, crop.h)}`;
       return `<div class="${className}" style="${style}"></div>`;
     })
     .join("");
@@ -370,10 +377,10 @@ function renderShot(side, delta, crop) {
   const absPath = side === "before" ? pair.beforeAbs : pair.afterAbs;
   const dimensions = side === "before" ? pair.beforeDims : pair.afterDims;
   const regions = side === "before" ? delta.before : delta.after;
-  const { html, clipped } = renderCallouts(regions, crop);
+  const { html, clipped } = renderCallouts(regions, crop, delta.n, side);
   const label = side === "before" ? "Before" : "After";
   const href = esc(hrefFor(absPath));
-  const alt = `${label}: ${delta.title} at ${pair.route}, state ${pair.state} (cropped to the changed region)`;
+  const alt = `${label}: ${delta.title} at ${pair.route}, state ${pair.state} (cropped to the changed component)`;
   const imageWidth = (viewWidth / crop.w) * 100;
   const imageLeft = -(crop.x / crop.w) * 100;
   const imageTop = -(crop.y / crop.h) * 100;
@@ -494,7 +501,6 @@ figcaption a{color:var(--ink);text-decoration:underline;text-underline-offset:2p
   pointer-events:none;
 }
 .callout--bare{background:transparent}
-.callout--frame{background:transparent;border-radius:8px}
 .note{margin:12px 0 0;font-size:12px;color:var(--muted)}
 .missing{max-width:70ch;margin:14px 0 0;color:var(--muted)}
 .evidence{margin-top:40px;display:grid;gap:20px;text-align:left}

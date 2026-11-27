@@ -27,8 +27,8 @@ Visual contract:
 
 - Page background `#FAFAF8` (not pure white), cards `#FDFCFA`, centered column `min(1120px, 100% - 40px)`, **text left-aligned inside the column**, light theme only.
 - Callout: `#F97316` 2px outline plus 8% fill. No number badge on the screenshots; the card number is plain orange text in the heading (`1.`). Orange is reserved for the change boxes.
-- Boxes are padded 6 CSS px beyond the measured rect for breathing room; boxes on the same side that overlap after padding are merged into one box. A box covering ≥95% of the crop is drawn border-only with a 6px inset; ≥60% drops the fill, so a wide band does not tint the screenshot.
-- The builder crops both images of a card to the same window: the union of that delta's rects, 35% padding clamped to 100–240px, minimum 360×240 CSS px, clamped to the viewport. The full viewport stays one click away under "full capture".
+- Boxes are padded 6 CSS px beyond the measured rect for breathing room; boxes on the same side that overlap after padding are merged into one box. A box covering ≥60% of the crop drops the fill; ≥95% is rejected — mark the changed component, not the viewport.
+- The builder crops both images of a card to the same window: the union of that delta's rects, 35% padding clamped to 64–200px, minimum 320×180 CSS px, clamped to the viewport. The full viewport stays one click away under "full capture".
 - A removed element gets no dashed anchor and no absent label. Give both sides the same container rect (the nav, card or page area), never the whole viewport or a band wider than the component; the box marks that component and the difference sits inside it. Explain the removal in `why`.
 - Images and the "full capture" link open the original PNG. At 760px and below the before/after pair stacks.
 
@@ -52,7 +52,7 @@ Visual contract:
 
    The script validates the refs, pair files, PNG dimensions against the viewport, and every rect; it writes `report.html` beside the JSON and computes each card's crop window. A validation error is a gap to fix, not something to paper over.
 
-7. **Verify and report.** Open `report.html` at 1440px and 390px. Confirm every crop shows the changed region at a readable size, the boxes sit on the changed content on both sides, and nothing overflows. Run the cheapest check that covers the page. Then reply with the one-sentence delta, the report path, and `Verification: <command> — <result>; evidence: <dir>`.
+7. **Verify and report.** Open `report.html` at 1440px and 390px. Confirm every crop shows the changed component at a readable size, the boxes sit on the changed content on both sides, and nothing overflows. Run the cheapest check that covers the page. Then reply with the one-sentence delta, the report path, and `Verification: <command> — <result>; evidence: <dir>`.
 
 ## deltas.json
 
@@ -101,7 +101,7 @@ Visual contract:
 | `source` | `file:line` (or `[inferred] …` when no source exists). |
 | `pair` | Id of a pair above. Pairs are reused across deltas. |
 | `before` / `after` | Rect arrays `{x,y,w,h}` in CSS px of the recorded viewport. At least one side non-empty. |
-| `crop` | Optional `{x,y,w,h}` in viewport CSS px. Overrides the computed crop; must contain every rect and fit the viewport. Use it to widen the context around the box, not to turn the box into a viewport frame. |
+| `crop` | Optional `{x,y,w,h}` in viewport CSS px. Overrides the computed crop; must leave at least 6px around every rect and fit the viewport. Use it to widen the context around the box, not to turn the box into a viewport frame. |
 | `notObserved` | Replaces `pair`/`why`: a reason string renders a muted numbered card in place. Use it when a visible delta could not be captured; use the top-level `notObserved` list for states that are not a delta. |
 | `pairs[].before/after` | PNG paths relative to `deltas.json`. |
 | `unchanged`, `notUI`, `notObserved` | String arrays; an empty list renders "None recorded." |
@@ -111,6 +111,22 @@ Rects are CSS pixels, never device pixels. The builder rejects screenshots whose
 
 For a removed element, use the same container rect on both sides (e.g., the whole nav), not the whole viewport or a full-width page band; explain the removal in `why`. The old `absent`/dashed marker is rejected.
 
+```jsonc
+// Removed nav item: box the nav container on both sides.
+{
+  "n": 2,
+  "title": "Header — Docs link",
+  "why": "The Docs link was removed from the primary navigation.",
+  "source": "src/components/Nav.astro:24",
+  "pair": "home-idle",
+  "crop": { "x": 1158.92, "y": 0, "w": 265.08, "h": 87 },
+  "before": [{ "x": 1198.92, "y": 28, "w": 185.08, "h": 19 }],
+  "after": [{ "x": 1259.05, "y": 28, "w": 124.95, "h": 19 }]
+}
+```
+
+The after box is narrower because `Docs` is gone; no `absent` field, both boxes solid.
+
 ## Evidence rules
 
 - **Same conditions or no comparison.** If before and after use different fixtures, dates, viewports, themes or wallet selections, the pair is not a delta. Fix the fixture or say why it cannot be fixed.
@@ -118,6 +134,7 @@ For a removed element, use the same container rect on both sides (e.g., the whol
 - **Interact through the page.** Reach hover, focus, open, error and disabled states with real page interactions. Do not inject a class, edit React state or reveal a hidden element to manufacture the after shot. If a state cannot be reached, say so.
 - **No production edits for evidence.** A temporary harness is allowed when it is the only way to seed a state; remove it before the report and leave the branch unchanged.
 - **Broken image is not evidence.** Check every capture loads at its natural size. A blank tile is a gap, not a change.
+- **Identical pair is not evidence.** The builder rejects byte-identical before/after PNGs; capture the state that shows the change or mark the delta `notObserved`.
 - **No taste verdicts.** "Cleaner", "better", "more polished" are out unless the caller asked for a judgement; that request belongs to `ui-review`.
 - **A source-only answer is labelled.** Without a runtime, the explanation is `[inferred]` from the diff, and the report says what could not be observed.
 - **Overlays are evidence too.** A box that does not sit on the changed element is a false claim; re-measure or mark the delta `notObserved`.
@@ -134,4 +151,4 @@ Follow it with **Why it changed** (source per row), **Unchanged**, **Not UI**, a
 
 ## Done
 
-Every numbered card has a matched before/after pair or a `notObserved` reason; every pair records refs, fixture, viewport, theme and scroll; every crop shows the changed region at a readable size, with boxes aligned on both sides; every visual claim has a source location or `[inferred]`; the report opens at 1440 and 390 without overflow; the chat line names the check and its result.
+Every numbered card has a matched before/after pair or a `notObserved` reason; every pair records refs, fixture, viewport, theme and scroll; every crop shows the changed component at a readable size, with boxes aligned on both sides; every visual claim has a source location or `[inferred]`; the report opens at 1440 and 390 without overflow; the chat line names the check and its result.
