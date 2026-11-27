@@ -50,7 +50,7 @@ Visual contract:
    node ~/.agents/skills/ui-previews/scripts/build-report.mjs .ui-previews/<date>-<surface>/deltas.json
    ```
 
-   The script validates the refs, pair files, PNG dimensions against the viewport, and every rect; it writes `report.html` beside the JSON and computes each card's crop window. A validation error is a gap to fix, not something to paper over.
+   The builder has no dependencies and requires Node 18+. It validates the refs, pair files, PNG dimensions against the viewport, and every rect; it writes `report.html` beside the JSON and computes each card's crop window. A validation error is a gap to fix, not something to paper over.
 
 7. **Verify and report.** Open `report.html` at 1440px and 390px. Confirm every crop shows the changed component at a readable size, the boxes sit on the changed content on both sides, and nothing overflows. Run the cheapest check that covers the page. Then reply with the one-sentence delta, the report path, and `Verification: <command> — <result>; evidence: <dir>`.
 
