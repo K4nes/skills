@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build a static ui-diff HTML report from deltas.json and its PNG pairs.
+ * Build a static ui-previews HTML report from deltas.json and its PNG pairs.
  * No dependencies. Node 18+.
  *
  *   node build-report.mjs <deltas.json> [--out report.html] [--allow-aspect-mismatch]
@@ -522,13 +522,13 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UI diff — ${esc(data.title)}</title>
+<title>UI previews — ${esc(data.title)}</title>
 <style>${style}</style>
 </head>
 <body>
 <main class="report">
   <header class="masthead">
-    <p class="eyebrow">UI diff</p>
+    <p class="eyebrow">UI previews</p>
     <h1>${esc(data.title)}</h1>
     <p class="refs"><code>${esc(baseLabel + data.base.ref)}</code> → <code>${esc(headLabel + data.head.ref)}</code></p>
     <p class="meta">${esc(data.fixture)} · ${viewWidth}×${viewHeight} · ${esc(data.theme)} · ${esc(date)}</p>
@@ -544,7 +544,7 @@ ${deltas.map(renderDelta).join("\n")}
 ${evidence}
   </section>
 
-  <p class="generated">Generated from <code>${esc(relative(outDir, jsonAbs).split(sep).join("/"))}</code> by ui-diff.</p>
+  <p class="generated">Generated from <code>${esc(relative(outDir, jsonAbs).split(sep).join("/"))}</code> by ui-previews.</p>
 </main>
 </body>
 </html>
